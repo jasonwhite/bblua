@@ -1,4 +1,5 @@
-language: cpp
+sudo: false
+language: generic
 
 env:
   matrix:
@@ -8,9 +9,17 @@ env:
 before_install:
   - source .travis/setenv_lua.sh
 
+matrix:
+  include:
+    - compiler: gcc
+      addons:
+        apt:
+          sources:
+            - ubuntu-toolchain-r-test
+          packages:
+            - python3
+            - g++-5
+      env: COMPILER_NAME=gcc CXX=g++-5 CC=gcc-5
+
 script:
   - make -j2 test
-
-compiler:
-  - gcc
-  - clang
