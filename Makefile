@@ -13,7 +13,7 @@ TARGET=button-lua
 # path should be used automatically instead.
 LUA_INSTALL_DIR=install/lua
 
-CXXFLAGS=-g -Wall -Werror -D__STDC_LIMIT_MACROS -I$(LUA_INSTALL_DIR)/include
+CXXFLAGS=-std=c++11 -g -Wall -Werror -D__STDC_LIMIT_MACROS -I$(LUA_INSTALL_DIR)/include
 
 all: $(TARGET) luaminify
 
