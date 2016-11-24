@@ -2,17 +2,57 @@
 Copyright 2016 Jason White. MIT license.
 
 Description:
-Tests the path manipulation functions.
+Tests the path manipulation functions for Windows.
 ]]
+
+local path = winpath;
+
+--[[
+    path.splitroot
+]]
+assert(path.splitroot("/") == "/")
+assert(path.splitroot("foo") == "")
+assert(path.splitroot("/foo") == "/")
+assert(path.splitroot("C:\\foo") == "C:\\")
+assert(path.splitroot("C:/foo") == "C:/")
+assert(path.splitroot("/:/foo") == "/:/")
+assert(path.splitroot("\\\\") == "")
+assert(path.splitroot("//server/share/foo/bar") == "//server/share")
+assert(path.splitroot("\\\\server/share/foo/bar") == "\\\\server/share")
+assert(path.splitroot("\\\\server\\") == "\\\\server\\")
+assert(path.splitroot("//server/") == "//server/")
+assert(path.splitroot("\\\\?\\C:\\foo") == "\\\\?\\C:\\")
+assert(path.splitroot("\\\\?\\UNC\\server\\share\\foo") == "\\\\?\\UNC\\server\\share")
+assert(path.splitroot("\\\\?\\UNC\\server\\") == "\\\\?\\UNC\\server\\")
+assert(path.splitroot("\\\\?\\foo\\bar\\") == "\\\\?\\")
+assert(path.splitroot("\\\\.\\DeviceName\\foo") == "\\\\.\\DeviceName")
+assert(path.splitroot("\\\\.\\") == "\\\\.\\")
 
 --[[
     path.isabs
 ]]
 assert(path.isabs("/"))
+assert(path.isabs("/a"))
+assert(path.isabs("C:/"))
+assert(path.isabs("C:\\"))
 assert(path.isabs("/foo/bar"))
+assert(path.isabs("\\foo/bar"))
+assert(path.isabs("\\foo/bar"))
+assert(path.isabs("C:\\foo/bar"))
+assert(path.isabs("C:/foo/bar"))
+assert(path.isabs("/:/foo/bar"))
+assert(path.isabs("\\\\server\\share"))
+assert(path.isabs("\\\\server\\"))
+assert(path.isabs("\\\\s\\"))
+assert(path.isabs("//server/share"))
+assert(path.isabs("/\\server\\share"))
+assert(not path.isabs("//"))
+assert(not path.isabs("\\\\\\share"))
+assert(not path.isabs("\\\\server"))
 assert(not path.isabs("foo"))
+assert(not path.isabs("C:"))
+assert(not path.isabs("C:foo"))
 assert(not path.isabs(""))
-
 
 --[[
     path.join
@@ -21,17 +61,20 @@ assert(path.join() == "")
 assert(path.join("") == "")
 assert(path.join("", "") == "")
 assert(path.join("foo") == "foo")
-assert(path.join("foo", "bar") == "foo/bar")
+assert(path.join("foo", "bar") == "foo\\bar")
 assert(path.join("foo", "/bar") == "/bar")
 assert(path.join("foo/", "bar") == "foo/bar")
 assert(path.join("foo/", nil, "bar") == "foo/bar")
 assert(path.join("foo//", "bar") == "foo//bar")
 assert(path.join("/", "foo") == "/foo")
-assert(path.join("foo", "") == "foo/")
+assert(path.join("foo", "") == "foo\\")
 assert(path.join("foo", nil) == "foo")
 assert(path.join("", "foo") == "foo")
 assert(path.join(nil, "foo") == "foo")
 
+assert(path.join("foo", "C:\\bar") == "C:\\bar")
+assert(path.join("foo", "\\\\server\\share") == "\\\\server\\share")
+assert(path.join("foo", "\\\\server\\share") == "\\\\server\\share")
 
 --[[
     path.split
@@ -42,21 +85,25 @@ local split_tests = {
     {"/", "/", "", "/"},
     {"foo", "", "foo", "foo"},
     {"/foo", "/", "foo", "/foo"},
-    {"foo/bar", "foo", "bar", "foo/bar"},
-    {"foo/", "foo", "", "foo/"},
-    {"/foo////bar", "/foo", "bar", "/foo/bar"},
-    {"////foo////bar", "////foo", "bar", "////foo/bar"},
+    {"foo/bar", "foo", "bar", "foo\\bar"},
+    {"foo/", "foo", "", "foo\\"},
+    {"/foo////bar", "/foo", "bar", "/foo\\bar"},
+    {"////foo////bar", "////foo", "bar", "////foo\\bar"},
+
+    {"\\\\server\\share", "\\\\server\\share", "", "\\\\server\\share\\"},
+    {"\\\\server\\share\\foo", "\\\\server\\share", "foo", "\\\\server\\share\\foo"},
+    {"C:\\foo", "C:\\", "foo", "C:\\foo"},
 }
 
 local split_error = 'In path.split("%s"): expected "%s", got "%s"'
 
 for k,v in ipairs(split_tests) do
     local head, tail = path.split(v[1])
-    assert(head == v[2], string.format(split_error, v[1], head, v[2]))
-    assert(tail == v[3], string.format(split_error, v[1], tail, v[3]))
-    assert(path.join(head, tail) == v[4])
+    assert(head == v[2], string.format(split_error, v[1], v[2], head))
+    assert(tail == v[3], string.format(split_error, v[1], v[3], tail))
+    assert(path.join(head, tail) == v[4],
+        string.format(split_error, v[1], v[4], path.join(head, tail)))
 end
-
 
 --[[
     path.basename
@@ -134,12 +181,12 @@ local components_tests = {
     {"", {}, ""},
     {"foo", {"foo"}, "foo"},
     {"foo/", {"foo"}, "foo"},
-    {"foo/bar", {"foo", "bar"}, "foo/bar"},
-    {"foo/bar/", {"foo", "bar"}, "foo/bar"},
-    {"/foo/bar/", {"/", "foo", "bar"}, "/foo/bar"},
-    {"foo///bar", {"foo", "bar"}, "foo/bar"},
-    {"/foo/bar", {"/", "foo", "bar"}, "/foo/bar"},
-    {"../foo/bar/baz", {"..", "foo", "bar", "baz"}, "../foo/bar/baz"},
+    {"foo/bar", {"foo", "bar"}, "foo\\bar"},
+    {"foo/bar/", {"foo", "bar"}, "foo\\bar"},
+    {"/foo/bar/", {"/", "foo", "bar"}, "/foo\\bar"},
+    {"foo///bar", {"foo", "bar"}, "foo\\bar"},
+    {"/foo/bar", {"/", "foo", "bar"}, "/foo\\bar"},
+    {"../foo/bar/baz", {"..", "foo", "bar", "baz"}, "..\\foo\\bar\\baz"},
 }
 
 local components_error = 'In path.components("%s"): expected %s, got %s'
@@ -171,14 +218,19 @@ assert(path.norm("") == ".")
 assert(path.norm(".") == ".")
 assert(path.norm("foo") == "foo")
 assert(path.norm("./foo") == "foo")
-assert(path.norm("/foo") == "/foo")
-assert(path.norm("foo//bar") == "foo/bar")
-assert(path.norm("foo/./bar") == "foo/bar")
+assert(path.norm("/foo") == "\\foo")
+assert(path.norm("foo//bar") == "foo\\bar")
+assert(path.norm("foo/./bar") == "foo\\bar")
 assert(path.norm("foo/../bar") == "bar")
 assert(path.norm("foo/../bar/..") == ".")
-assert(path.norm("../foo/../bar") == "../bar")
-assert(path.norm("/../foo/../bar") == "/bar")
-assert(path.norm("/../../.././bar/") == "/bar")
-assert(path.norm("../foo/../bar/") == "../bar")
-assert(path.norm("../foo/../bar///") == "../bar")
-assert(path.norm("../path/./to//a/../b/c/../../test.txt/") == "../path/to/test.txt")
+assert(path.norm("../foo/../bar") == "..\\bar")
+assert(path.norm("/../foo/../bar") == "\\bar")
+assert(path.norm("/../../.././bar/") == "\\bar")
+assert(path.norm("../foo/../bar/") == "..\\bar")
+assert(path.norm("../foo/../bar///") == "..\\bar")
+assert(path.norm("../path/./to//a/../b/c/../../test.txt/") == "..\\path\\to\\test.txt")
+
+assert(path.norm("C:/foo/../../../bar") == "C:\\bar")
+assert(path.norm("\\\\server\\share\\..\\..\\foo") == "\\\\server\\share\\foo")
+assert(path.norm("\\\\?\\UNC\\server\\share\\..\\..\\foo") == "\\\\?\\UNC\\server\\share\\foo")
+assert(path.norm("\\\\.\\COM1\\bar\\baz\\..\\..\\..\\foo") == "\\\\.\\COM1\\foo")

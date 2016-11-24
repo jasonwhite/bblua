@@ -47,7 +47,7 @@ public:
     int cmp(const PathImpl& rhs) const;
 
     /**
-     * Returns the root portion of the path.
+     * Returns the length of the root portion of the path.
      *
      * On Posix, simply returns "/" if the path starts with it.
      *
@@ -56,19 +56,35 @@ public:
      *
      * If the path is not rooted, returns a path of length 0.
      */
-    virtual PathImpl root() const = 0;
+    virtual size_t rootLength() const = 0;
+
+    /**
+     * Returns a split where the head is the root part of the path and the tail
+     * is the rest of the path.
+     *
+     * For example, on Windows, "C:\foo" returns ("C:\", "foo").
+     *
+     * The concatenation of these two paths yields the original path.
+     */
+    Split<PathImpl> splitRoot() const;
+
+    PathImpl root() const {
+        return splitRoot().head;
+    }
 
     /**
      * Returns true if the path is just a root and nothing else.
      */
     bool isRoot() const {
-        return length > 0 && root().length == length;
+        return length > 0 && rootLength() == length;
     }
 
     /**
      * Returns true if the given path is absolute.
      */
-    virtual bool isabs() const = 0;
+    bool isabs() const {
+        return rootLength() > 0;
+    }
 
     /**
      * Gets the directory name of the path.
@@ -156,6 +172,16 @@ int BasePath<PathImpl>::cmp(const PathImpl& rhs) const {
 }
 
 template<class PathImpl>
+Split<PathImpl> BasePath<PathImpl>::splitRoot() const {
+    size_t r = rootLength();
+
+    Split<PathImpl> s;
+    s.head = PathImpl(path, r);
+    s.tail = PathImpl(path + r, length - r);
+    return s;
+}
+
+template<class PathImpl>
 void BasePath<PathImpl>::join(std::string& buf) {
     if (isabs()) {
         // Path is absolute, reset the buffer length
@@ -174,11 +200,17 @@ void BasePath<PathImpl>::join(std::string& buf) {
 template<class PathImpl>
 Split<PathImpl> BasePath<PathImpl>::split() const {
 
+    // Find the length of the root. We need to ensure we never split inside the
+    // root.
+    const size_t rootEnd = rootLength();
+
     // Search backwards for the last path separator
     size_t tail_start = length;
 
-    while (tail_start > 0) {
+    // Find where the last path component begins.
+    while (tail_start > rootEnd) {
         --tail_start;
+
         if (PathImpl::isSep(path[tail_start])) {
             ++tail_start;
             break;
@@ -187,7 +219,7 @@ Split<PathImpl> BasePath<PathImpl>::split() const {
 
     // Trim off the path separator(s)
     size_t head_end = tail_start;
-    while (head_end > 0) {
+    while (head_end > rootEnd) {
         --head_end;
 
         if (!PathImpl::isSep(path[head_end])) {
@@ -196,14 +228,9 @@ Split<PathImpl> BasePath<PathImpl>::split() const {
         }
     }
 
-    if (head_end == 0)
-        head_end = tail_start;
-
     Split<PathImpl> s;
-    s.head.path   = path;
-    s.head.length = head_end;
-    s.tail.path   = path+tail_start;
-    s.tail.length = length-tail_start;
+    s.head = PathImpl(path, head_end);
+    s.tail = PathImpl(path+tail_start, length-tail_start);
     return s;
 }
 
@@ -229,10 +256,8 @@ Split<PathImpl> BasePath<PathImpl>::splitExtension() const {
         ++base;
 
     Split<PathImpl> s;
-    s.head.path = path;
-    s.head.length = base;
-    s.tail.path = path+base;
-    s.tail.length = length-base;
+    s.head = PathImpl(path, base);
+    s.tail = PathImpl(path+base, length-base);
     return s;
 }
 
@@ -324,5 +349,11 @@ void BasePath<PathImpl>::norm(std::string& buf) const {
     else {
         for (auto&& c: stack)
             c.join(buf);
+    }
+
+    // Normalize path separators. This should get optimized out for Posix paths.
+    for (auto& ch: buf) {
+        if (PathImpl::isSep(ch) && ch != PathImpl::defaultSep)
+            ch = PathImpl::defaultSep;
     }
 }

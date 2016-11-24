@@ -13,6 +13,17 @@
 #include "lua.hpp"
 
 template<class Path>
+static int path_splitroot(lua_State* L) {
+    size_t len;
+    const char* path = luaL_checklstring(L, 1, &len);
+
+    const Split<Path> s = Path(path, len).splitRoot();
+    lua_pushlstring(L, s.head.path, s.head.length);
+    lua_pushlstring(L, s.tail.path, s.tail.length);
+    return 2;
+}
+
+template<class Path>
 static int path_isabs(lua_State* L) {
     size_t len;
     const char* path = luaL_checklstring(L, 1, &len);
@@ -149,7 +160,8 @@ static int path_norm(lua_State* L) {
     return 1;
 }
 
-static const luaL_Reg pathlib[] = {
+static const luaL_Reg pathlib_posix[] = {
+    {"splitroot", path_splitroot<PosixPath>},
     {"isabs", path_isabs<PosixPath>},
     {"join", path_join<PosixPath>},
     {"split", path_split<PosixPath>},
@@ -163,7 +175,36 @@ static const luaL_Reg pathlib[] = {
     {NULL, NULL}
 };
 
+static const luaL_Reg pathlib_win[] = {
+    {"splitroot", path_splitroot<WinPath>},
+    {"isabs", path_isabs<WinPath>},
+    {"join", path_join<WinPath>},
+    {"split", path_split<WinPath>},
+    {"basename", path_basename<WinPath>},
+    {"dirname", path_dirname<WinPath>},
+    {"splitext", path_splitext<WinPath>},
+    {"getext", path_getext<WinPath>},
+    {"setext", path_setext<WinPath>},
+    {"components", path_components<WinPath>},
+    {"norm", path_norm<WinPath>},
+    {NULL, NULL}
+};
+
 int luaopen_path(lua_State* L) {
-    luaL_newlib(L, pathlib);
+#ifdef _WIN32
+    luaL_newlib(L, pathlib_win);
+#else
+    luaL_newlib(L, pathlib_posix);
+#endif
+    return 1;
+}
+
+int luaopen_posixpath(lua_State* L) {
+    luaL_newlib(L, pathlib_posix);
+    return 1;
+}
+
+int luaopen_winpath(lua_State* L) {
+    luaL_newlib(L, pathlib_win);
     return 1;
 }

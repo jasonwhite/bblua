@@ -15,17 +15,17 @@
 
 #include "path/base.h"
 
-class PosixPath : public BasePath<PosixPath> {
+class WinPath : public BasePath<WinPath> {
 public:
-    using BasePath<PosixPath>::BasePath;
+    using BasePath<WinPath>::BasePath;
 
-    static const char defaultSep = '/';
-    static const bool caseSensitive = true;
+    static const char defaultSep = '\\';
+    static const bool caseSensitive = false;
 
     static int cmp(char a, char b);
 
     static inline bool isSep(char c) {
-        return c == '/';
+        return c == '/' || c == '\\';
     }
 
     size_t rootLength() const;

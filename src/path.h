@@ -9,5 +9,10 @@
 #pragma once
 
 #include "path/posix.h"
+#include "path/windows.h"
 
+#ifdef _WIN32
+using Path = WinPath;
+#else
 using Path = PosixPath;
+#endif

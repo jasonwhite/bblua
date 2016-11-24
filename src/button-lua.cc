@@ -99,6 +99,12 @@ int init(lua_State* L) {
     luaL_requiref(L, "path", luaopen_path, 1);
     lua_pop(L, 1);
 
+    luaL_requiref(L, "winpath", luaopen_winpath, 1);
+    lua_pop(L, 1);
+
+    luaL_requiref(L, "posixpath", luaopen_posixpath, 1);
+    lua_pop(L, 1);
+
     lua_pushcfunction(L, lua_glob);
     lua_setglobal(L, "glob");
 

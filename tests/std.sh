@@ -6,6 +6,7 @@
 # Tests additions to the standard Lua library.
 
 runtest std/globals.sh
-runtest std/path.sh
+runtest std/posixpath.sh
+runtest std/winpath.sh
 runtest std/string.sh
 runtest std/glob.sh
