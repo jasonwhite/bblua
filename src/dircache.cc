@@ -72,8 +72,6 @@ DirEntries dirEntries(const std::string& path) {
 
     FindClose(h);
 
-#   error Not implemented yet.
-
 #else // _WIN32
 
     DIR* dir = opendir(path.length() > 0 ? path.c_str() : ".");
