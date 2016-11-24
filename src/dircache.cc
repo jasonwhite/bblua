@@ -4,9 +4,13 @@
  * MIT License
  */
 
-#include <dirent.h>
-#include <sys/stat.h>
-#include <fcntl.h>
+#ifdef _WIN32
+#   include <windows.h>
+#else
+#   include <dirent.h>
+#   include <sys/stat.h>
+#   include <fcntl.h>
+#endif // _WIN32
 
 #include <algorithm>
 #include <utility>
@@ -38,8 +42,36 @@ DirEntries dirEntries(const std::string& path) {
 
 #ifdef _WIN32
 
-    // TODO: Implement on Windows. We'll need to convert between UTF-8 and
-    // UTF-16 when interacting with the Windows API.
+    // FIXME: Use the UTF-16 version of the API. We are using UTF-8 everywhere
+    // internally, so we need to convert.
+    //
+    // Use the ANSI version of the API for now.
+    WIN32_FIND_DATAA entry;
+
+    HANDLE h = FindFirstFileExA(
+            path.c_str(),
+            FindExInfoBasic, // Don't need the alternate name
+            &entry, // Find data
+            FindExSearchNameMatch, // Do not filter
+            NULL, // Search filter. Always NULL.
+            FIND_FIRST_EX_LARGE_FETCH // Try to increase performance
+            );
+
+    if (h == INVALID_HANDLE_VALUE)
+        return entries;
+
+    do {
+        if (isDotOrDotDot(entry.cFileName)) continue;
+
+        entries.push_back(DirEntry {
+                entry->cFileName,
+                entry.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY
+                });
+
+    } while (FindFileA(h, &entry));
+
+    FindClose(h);
+
 #   error Not implemented yet.
 
 #else // _WIN32
