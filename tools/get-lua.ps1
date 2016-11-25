@@ -21,8 +21,8 @@
 # Change these when updating the version of Lua.
 $lua_version = '5.3.3'
 $lua_sha1    = 'A0341BC3D1415B814CC738B2EC01AE56045D64EF'
-$lua_dest    = '..\src\lua'
 $lua_url     = "https://www.lua.org/ftp/lua-$lua_version.tar.gz"
+
 $lua_archive = "lua-$lua_version.tar.gz"
 
 # Stop immediately if something fails.
@@ -44,4 +44,4 @@ if ($hash -ne $lua_sha1) {
 $env:Path += ';C:\Program Files\7-Zip'
 
 # Use cmd.exe because PowerShell is horrible at piping processes.
-& cmd.exe "/C 7z x $lua_archive -so | 7z x -aoa -si -ttar lua-$lua_version -o."
+& cmd.exe "/C 7z x $lua_archive -so | 7z x -aoa -si -ttar lua-$lua_version -ovs"

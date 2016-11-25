@@ -1,5 +1,3 @@
-lua-*/
-lua-*.tar.gz
 Debug/
 Release/
 x64/

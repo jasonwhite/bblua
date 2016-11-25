@@ -1,1 +1,3 @@
 /src/embedded/
+lua-*/
+lua-*.tar.gz
