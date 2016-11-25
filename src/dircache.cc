@@ -64,11 +64,11 @@ DirEntries dirEntries(const std::string& path) {
         if (isDotOrDotDot(entry.cFileName)) continue;
 
         entries.push_back(DirEntry {
-                entry->cFileName,
-                entry.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY
+                entry.cFileName,
+                (entry.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY) == FILE_ATTRIBUTE_DIRECTORY
                 });
 
-    } while (FindFileA(h, &entry));
+    } while (FindNextFileA(h, &entry));
 
     FindClose(h);
 

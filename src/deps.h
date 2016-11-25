@@ -13,8 +13,13 @@
 #include <stdio.h>
 
 #ifdef _WIN32
-#   error "Implement me!"
+#   pragma warning(push)
+
+    // Disable "nonstandard extension used: zero-sized array in struct/union"
+#   pragma warning(disable : 4200)
 #endif
+
+#pragma pack(push, 4)
 
 struct Dependency {
 
@@ -53,7 +58,9 @@ struct Dependency {
      * to the working directory that the child was spawned in.
      */
     char name[0];
-} __attribute__((aligned(4),packed));
+};
+
+#pragma pack(pop)
 
 /**
  * Handles sending dependencies to the parent build system (if any).
@@ -66,8 +73,14 @@ struct Dependency {
  */
 class ImplicitDeps {
 private:
-    FILE* _f_inputs;
-    FILE* _f_outputs;
+
+#ifdef _WIN32
+    void* _inputs;
+    void* _outputs;
+#else
+    FILE* _inputs;
+    FILE* _outputs;
+#endif
 
 public:
     ImplicitDeps();
@@ -90,3 +103,8 @@ public:
     void addInput(const char* name, size_t length);
     void addOutput(const char* name, size_t length);
 };
+
+
+#ifdef _WIN32
+#   pragma warning(pop)
+#endif

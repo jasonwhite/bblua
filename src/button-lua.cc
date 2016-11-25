@@ -6,9 +6,13 @@
  * Description:
  * Main program logic.
  */
+
+#ifdef _WIN32
+#   define _CRT_SECURE_NO_WARNINGS
+#endif
+
 #include <string.h>
 #include <stdio.h>
-#include <unistd.h>
 #include <string>
 
 #include "button-lua.h"
