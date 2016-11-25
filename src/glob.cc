@@ -9,11 +9,6 @@
 #include <stdlib.h>
 #include <string.h>
 #include <ctype.h>
-#include <dirent.h>
-#include <sys/stat.h>
-#include <fcntl.h>
-#include <errno.h>
-#include <unistd.h>
 
 #include <string>
 #include <set>
@@ -140,6 +135,7 @@ namespace {
  * Callback to put globbed items into a set.
  */
 void fs_globcallback(Path path, bool isDir, void* data) {
+    (void)isDir;
     std::set<std::string>* paths = (std::set<std::string>*)data;
     paths->insert(std::string(path.path, path.length));
 }
@@ -148,6 +144,7 @@ void fs_globcallback(Path path, bool isDir, void* data) {
  * Callback to remove globbed items from a set.
  */
 void fs_globcallback_exclude(Path path, bool isDir, void* data) {
+    (void)isDir;
     std::set<std::string>* paths = (std::set<std::string>*)data;
     paths->erase(std::string(path.path, path.length));
 }
@@ -229,7 +226,7 @@ int lua_glob(lua_State* L) {
 
     // Construct the Lua table.
     lua_newtable(L);
-    lua_Number n = 1;
+    lua_Integer n = 1;
 
     for (std::set<std::string>::iterator it = paths.begin(); it != paths.end(); ++it) {
         lua_pushlstring(L, it->data(), it->size());

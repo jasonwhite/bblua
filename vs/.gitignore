@@ -1,0 +1,9 @@
+lua-*/
+lua-*.tar.gz
+Debug/
+Release/
+x64/
+.vs/
+*.VC.VC.opendb
+*.VC.db
+*.vcxproj.user
