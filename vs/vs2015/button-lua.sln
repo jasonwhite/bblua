@@ -6,6 +6,7 @@ MinimumVisualStudioVersion = 10.0.40219.1
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "button-lua", "button-lua\button-lua.vcxproj", "{2B11DF7D-0B10-468D-A8FB-69476CA51D19}"
 	ProjectSection(ProjectDependencies) = postProject
 		{9B550E26-A06B-4B9F-A177-389F2B2A84C9} = {9B550E26-A06B-4B9F-A177-389F2B2A84C9}
+		{ED829C4E-FDC3-4B9B-B0FC-6893EF791D91} = {ED829C4E-FDC3-4B9B-B0FC-6893EF791D91}
 	EndProjectSection
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "liblua", "liblua\liblua.vcxproj", "{9B550E26-A06B-4B9F-A177-389F2B2A84C9}"

@@ -135,6 +135,9 @@
     <CustomBuildStep />
     <CustomBuildStep />
     <CustomBuildStep />
+    <PreBuildEvent>
+      <Command>powershell -ExecutionPolicy Bypass -File ..\..\..\tools\embed_all_scripts.ps1 -lua "$(OutDir)\lua.exe"</Command>
+    </PreBuildEvent>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <ClCompile>
@@ -157,6 +160,9 @@
     <CustomBuildStep />
     <CustomBuildStep />
     <CustomBuildStep />
+    <PreBuildEvent>
+      <Command>powershell -ExecutionPolicy Bypass -File ..\..\..\tools\embed_all_scripts.ps1 -lua "$(OutDir)\lua.exe"</Command>
+    </PreBuildEvent>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
     <ClCompile>
@@ -184,6 +190,9 @@
     <CustomBuildStep />
     <CustomBuildStep />
     <CustomBuildStep />
+    <PreBuildEvent>
+      <Command>powershell -ExecutionPolicy Bypass -File ..\..\..\tools\embed_all_scripts.ps1 -lua "$(OutDir)\lua.exe"</Command>
+    </PreBuildEvent>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
     <ClCompile>
@@ -211,6 +220,9 @@
     <CustomBuildStep />
     <CustomBuildStep />
     <CustomBuildStep />
+    <PreBuildEvent>
+      <Command>powershell -ExecutionPolicy Bypass -File ..\..\..\tools\embed_all_scripts.ps1 -lua "$(OutDir)\lua.exe"</Command>
+    </PreBuildEvent>
   </ItemDefinitionGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
