@@ -1,0 +1,35 @@
+image: Visual Studio 2015
+
+install:
+    - ps: .\tools\get-lua.ps1
+
+platform:
+ - Win32
+ - x64
+
+configuration:
+ - Debug
+ - Release
+
+build:
+  parallel: true
+  project: vs/vs2015/button-lua.sln
+
+after_build:
+ - 7z a button-lua-windows-%PLATFORM%-%CONFIGURATION%.zip .\vs\vs2015\%PLATFORM%\%CONFIGURATION%\button-lua.exe
+
+artifacts:
+ - path: button-lua-windows-$(platform)-$(configuration).zip
+   name: button-lua
+
+deploy:
+ - provider: GitHub
+   auth_token:
+     secure: M5QsspiAtEP8jLdfNQ5e+e0v9dp8vVkDJfX4NEdsOrd2DMsr+WhPZEFTbqtnWk10
+   artifact: button-lua
+   draft: false
+   prerelease: false
+   on:
+     branch: master
+     appveyor_repo_tag: true
+     configuration: Release
