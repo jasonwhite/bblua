@@ -15,7 +15,7 @@ LUA_INSTALL_DIR=install/lua
 
 CXXFLAGS=-std=c++11 -g -Wall -Werror -D__STDC_LIMIT_MACROS -I$(LUA_INSTALL_DIR)/include -Isrc
 
-all: $(TARGET) luaminify
+all: $(TARGET)
 
 %.cc.o: %.cc
 	${CXX} $(CXXFLAGS) -c $< -o $@
@@ -23,18 +23,15 @@ all: $(TARGET) luaminify
 # Generate strings from Lua files.
 src/embedded/%.c: scripts/%.lua
 	@mkdir -p "$(@D)"
-	xxd -i $^ $@
+	lua tools/embed.lua $^ > $@
 
 src/embedded.cc.o: $(LUA_SCRIPTS_C)
 
 $(TARGET): $(OBJECTS)
 	${CXX} $(OBJECTS) -L$(LUA_INSTALL_DIR)/lib -llua -ldl -o $@
 
-luaminify: tools/luaminify.cc.o
-	${CXX} $^ -o $@
-
 test: $(TARGET)
 	@./test
 
 clean:
-	$(RM) $(TARGET) luaminify $(OBJECTS) $(LUA_SCRIPTS_C)
+	$(RM) $(TARGET) $(OBJECTS) $(LUA_SCRIPTS_C)

@@ -15,7 +15,7 @@
 
 // Helper macro for adding new modules
 #define SCRIPT(module, path, name) \
-    {(module), (path), scripts_ ## name ## _lua, scripts_ ## name ## _lua_len}
+    {(module), (path), scripts_ ## name ## _lua, sizeof(scripts_ ## name ## _lua)}
 
 namespace {
 
@@ -54,14 +54,14 @@ const Script script_shutdown = SCRIPT("shutdown", "shutdown.lua", shutdown);
 /**
  * List of embedded Lua scripts.
  *
- * NOTE: This must be in alphabetical order according to the Lua script path.
+ * NOTE: This *must* be in sorted order according to the module name.
  */
 const Script embedded[] = {
-    SCRIPT("rules", "{embedded}/rules.lua", rules),
-    SCRIPT("rules.cc", "{embedded}/rules/cc.lua", rules_cc),
+    SCRIPT("rules",        "{embedded}/rules.lua",        rules),
+    SCRIPT("rules.cc",     "{embedded}/rules/cc.lua",     rules_cc),
     SCRIPT("rules.cc.gcc", "{embedded}/rules/cc/gcc.lua", rules_cc_gcc),
-    SCRIPT("rules.d", "{embedded}/rules/d.lua", rules_d),
-    SCRIPT("rules.d.dmd", "{embedded}/rules/d/dmd.lua", rules_d_dmd),
+    SCRIPT("rules.d",      "{embedded}/rules/d.lua",      rules_d),
+    SCRIPT("rules.d.dmd",  "{embedded}/rules/d/dmd.lua",  rules_d_dmd),
 };
 
 const size_t embedded_len = sizeof(embedded)/sizeof(Script);
