@@ -1,10 +1,10 @@
-[travis-ci-badge]: https://travis-ci.org/jasonwhite/build-lua.svg?branch=master
+[travis-ci-badge]: https://travis-ci.org/jasonwhite/button-lua.svg?branch=master
 [appveyor-badge]: https://ci.appveyor.com/api/projects/status/ytgd4d2uree1cb7h/branch/master?svg=true
 
 # Lua Build Descriptions for Button
 
-[![Build Status][travis-ci-badge]](https://travis-ci.org/jasonwhite/build-lua)
-[![Build status][appveyor-badge]](https://ci.appveyor.com/project/jasonwhite/build-lua/branch/master)
+[![Build Status][travis-ci-badge]](https://travis-ci.org/jasonwhite/button-lua)
+[![Build status][appveyor-badge]](https://ci.appveyor.com/project/jasonwhite/button-lua/branch/master)
 
 A tool to generate build descriptions from Lua scripts that are suitable for
 input to [Button][].
