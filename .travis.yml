@@ -17,6 +17,11 @@ compiler:
 before_install:
  - source .travis/setenv_lua.sh
 
+install:
+ - if [[ "$TRAVIS_OS_NAME" = "linux" && "$CXX" = "g++" ]]; then
+       export CXX="g++-4.8" CC="gcc-4.8";
+   fi
+
 addons:
   apt:
     sources:
