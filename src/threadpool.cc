@@ -26,7 +26,7 @@ ThreadPool::ThreadPool(size_t threads) :
 {
     // Initialize worker threads.
     for (size_t i = 0; i < threads; ++i) {
-        _threads[i] = std::move(std::thread([this] { this->worker(); }));
+        _threads[i] = std::thread([this] { this->worker(); });
     }
 }
 
