@@ -157,12 +157,14 @@ int lua_glob(lua_State* L) {
 
     // Adds a path to the set.
     GlobCallback include = [&] (Path path, bool isDir) {
+        (void)isDir;
         std::lock_guard<std::mutex> lock(mutex);
         paths.insert(std::string(path.path, path.length));
     };
 
     // Removes a path to the set.
     GlobCallback exclude = [&] (Path path, bool isDir) {
+        (void)isDir;
         std::lock_guard<std::mutex> lock(mutex);
         paths.erase(std::string(path.path, path.length));
     };

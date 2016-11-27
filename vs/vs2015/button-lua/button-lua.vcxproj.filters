@@ -54,6 +54,9 @@
     <ClInclude Include="..\..\..\src\path\windows.h">
       <Filter>Header Files\path</Filter>
     </ClInclude>
+    <ClInclude Include="..\..\..\src\threadpool.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\..\..\src\button-lua.cc">
@@ -85,6 +88,9 @@
     </ClCompile>
     <ClCompile Include="..\..\..\src\path\windows.cc">
       <Filter>Source Files\path</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\src\threadpool.cc">
+      <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>
 </Project>

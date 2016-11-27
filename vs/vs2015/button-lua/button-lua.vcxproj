@@ -30,6 +30,7 @@
     <ClInclude Include="..\..\..\src\path\posix.h" />
     <ClInclude Include="..\..\..\src\path\windows.h" />
     <ClInclude Include="..\..\..\src\rules.h" />
+    <ClInclude Include="..\..\..\src\threadpool.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\..\..\src\button-lua.cc" />
@@ -42,6 +43,7 @@
     <ClCompile Include="..\..\..\src\path\posix.cc" />
     <ClCompile Include="..\..\..\src\path\windows.cc" />
     <ClCompile Include="..\..\..\src\rules.cc" />
+    <ClCompile Include="..\..\..\src\threadpool.cc" />
   </ItemGroup>
   <PropertyGroup Label="Globals">
     <ProjectGuid>{2B11DF7D-0B10-468D-A8FB-69476CA51D19}</ProjectGuid>
