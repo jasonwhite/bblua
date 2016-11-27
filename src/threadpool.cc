@@ -42,7 +42,7 @@ ThreadPool::~ThreadPool() {
     }
 }
 
-void ThreadPool::enqueue(std::function<void()> task) {
+void ThreadPool::enqueueTask(std::function<void()> task) {
     {
         std::lock_guard<std::mutex> lock(_queueMutex);
         _queue.emplace(task);

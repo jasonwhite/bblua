@@ -162,15 +162,7 @@ struct GlobClosure {
 
     // Next callback
     GlobCallback next;
-    void* nextData;
 };
-
-void globCallback(Path path, bool isDir, void* data) {
-    if (isDir) {
-        const GlobClosure* c = (const GlobClosure*)data;
-        c->dirCache->glob(c->root, path, c->pattern, c->next, c->nextData);
-    }
-}
 
 }
 
@@ -179,13 +171,13 @@ void globCallback(Path path, bool isDir, void* data) {
  * pattern is empty,
  */
 void DirCache::glob(Path root, Path path, Path pattern,
-          GlobCallback callback, void* data) {
+          GlobCallback callback) {
 
     std::string buf(path.path, path.length);
 
     if (pattern.length == 0) {
         pattern.join(buf);
-        callback(Path(buf.data(), buf.size()), true, data);
+        callback(Path(buf), true);
         return;
     }
 
@@ -193,9 +185,9 @@ void DirCache::glob(Path root, Path path, Path pattern,
         if (globMatch(entry.name, pattern)) {
             Path(entry.name).join(buf);
 
-            callback(Path(buf.data(), buf.size()), entry.isDir, data);
+            callback(Path(buf), entry.isDir);
 
-            buf.assign(path.path, path.length);
+            buf.resize(path.length);
         }
     }
 }
@@ -204,20 +196,25 @@ void DirCache::glob(Path root, Path path, Path pattern,
  * Helper function to recursively yield directories for the given path.
  */
 void DirCache::globRecursive(Path root, std::string& path,
-        GlobCallback callback, void* data) {
+        GlobCallback callback) {
 
     size_t len = path.size();
 
     // "**" matches 0 or more directories and thus includes this one.
-    callback(Path(path.data(), path.size()), true, data);
+    callback(Path(path), true);
 
     for (auto&& entry: dirEntries(root, path)) {
         Path(entry.name).join(path);
 
-        callback(Path(path.data(), path.size()), entry.isDir, data);
+        callback(Path(path), entry.isDir);
 
-        if (entry.isDir)
-            globRecursive(root, path, callback, data);
+        if (entry.isDir) {
+            //globRecursive(root, path, callback);
+            _pool.enqueueTask([this, root, path, callback] {
+                std::string copy(path);
+                this->globRecursive(root, copy, callback);
+                });
+        }
 
         path.resize(len);
     }
@@ -226,44 +223,45 @@ void DirCache::globRecursive(Path root, std::string& path,
 /**
  * Glob a directory.
  */
-void DirCache::glob(Path root, Path path, GlobCallback callback, void* data) {
+void DirCache::glob(Path root, Path path, GlobCallback callback) {
 
     Split<Path> s = path.split();
 
     if (isGlobPattern(s.head)) {
-        // Directory name contains a glob pattern
-
-        GlobClosure c;
-        c.dirCache = this;
-        c.root = root;
-        c.pattern = s.tail;
-        c.next = callback;
-        c.nextData = data;
-
-        glob(root, s.head, &globCallback, &c);
+        // Directory name contains a glob pattern.
+        glob(root, s.head,
+            [&](Path p, bool isDir) {
+                if (isDir) this->glob(root, p, s.tail, callback);
+            }
+        );
     }
     else if (isRecursiveGlob(s.tail)) {
         std::string buf(s.head.path, s.head.length);
-        globRecursive(root, buf, callback, data);
+        globRecursive(root, buf, callback);
     }
     else if (isGlobPattern(s.tail)) {
         // Only base name contains a glob pattern.
-        glob(root, s.head, s.tail, callback, data);
+        glob(root, s.head, s.tail, callback);
     }
     else {
         // No glob pattern in this path.
         if (s.tail.length) {
-            // TODO: Only yield this path if the file exists.
-            callback(path, false, data);
+            callback(path, false);
         }
         else {
-            // TODO: Only yield this path if the directory exists.
-            callback(s.head, true, data);
+            callback(s.head, true);
         }
     }
+
+    _pool.waitAll();
 }
 
-DirCache::DirCache(ImplicitDeps* deps) : _deps(deps) {}
+DirCache::DirCache(ImplicitDeps* deps) : _deps(deps), _pool(8) {}
+
+DirCache::~DirCache() {
+    // Ensure all work is done.
+    _pool.waitAll();
+}
 
 const DirEntries& DirCache::dirEntries(Path root, Path dir) {
     std::string buf(root.path, root.length);
@@ -275,15 +273,17 @@ const DirEntries& DirCache::dirEntries(const std::string& path) {
 
     auto normalized = Path(path).norm();
 
+    std::lock_guard<std::mutex> lock(_mutex);
+
     // Did we already do the work?
-    const auto it = cache.find(normalized);
-    if (it != cache.end())
+    const auto it = _cache.find(normalized);
+    if (it != _cache.end())
         return it->second;
 
     if (_deps) _deps->addInput(normalized.data(), normalized.length());
 
     // List the directories, cache it, and return the cached list.
-    return cache.insert(
+    return _cache.insert(
             std::pair<std::string, DirEntries>(normalized, ::dirEntries(normalized))
             ).first->second;
 }

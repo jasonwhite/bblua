@@ -55,7 +55,7 @@ public:
     /**
      * Adds a new task to the end of the queue.
      */
-    void enqueue(std::function<void()> task);
+    void enqueueTask(std::function<void()> task);
 
     /**
      * Wraps a task in a future and adds it to the end of the queue. This is
@@ -72,7 +72,7 @@ public:
 
         auto res = task->get_future();
 
-        enqueue([task](){ (*task)(); });
+        enqueueTask([task](){ (*task)(); });
 
         return res;
     }
