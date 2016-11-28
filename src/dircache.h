@@ -82,4 +82,6 @@ public:
 private:
 
     void globRecursive(Path root, std::string& path, GlobCallback callback);
+
+    void globImpl(Path root, Path path, GlobCallback callback);
 };

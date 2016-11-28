@@ -130,7 +130,7 @@ DirEntries dirEntries(const std::string& path) {
 /**
  * Returns true if the given string contains a glob pattern.
  */
-bool isGlobPattern(Path p) {
+inline bool isGlobPattern(const Path& p) {
     for (size_t i = 0; i < p.length; ++i) {
         switch (p.path[i]) {
             case '?':
@@ -146,114 +146,10 @@ bool isGlobPattern(Path p) {
 /**
  * Returns true if the given path element is a recursive glob pattern.
  */
-bool isRecursiveGlob(Path p) {
+inline bool isRecursiveGlob(const Path& p) {
     return p.length == 2 && p.path[0] == '*' && p.path[1] == '*';
 }
 
-struct GlobClosure {
-
-    // Directory listing cache.
-    DirCache* dirCache;
-
-    // Root directory we are globbing from.
-    Path root;
-
-    Path pattern;
-
-    // Next callback
-    GlobCallback next;
-};
-
-}
-
-/**
- * Helper function for listing a directory with the given pattern. If the
- * pattern is empty,
- */
-void DirCache::glob(Path root, Path path, Path pattern,
-          GlobCallback callback) {
-
-    std::string buf(path.path, path.length);
-
-    if (pattern.length == 0) {
-        pattern.join(buf);
-        callback(Path(buf), true);
-        return;
-    }
-
-    for (auto&& entry: dirEntries(root, path)) {
-        if (globMatch(entry.name, pattern)) {
-            Path(entry.name).join(buf);
-
-            callback(Path(buf), entry.isDir);
-
-            buf.resize(path.length);
-        }
-    }
-}
-
-/**
- * Helper function to recursively yield directories for the given path.
- */
-void DirCache::globRecursive(Path root, std::string& path,
-        GlobCallback callback) {
-
-    size_t len = path.size();
-
-    // "**" matches 0 or more directories and thus includes this one.
-    callback(Path(path), true);
-
-    for (auto&& entry: dirEntries(root, path)) {
-        Path(entry.name).join(path);
-
-        callback(Path(path), entry.isDir);
-
-        if (entry.isDir) {
-            //globRecursive(root, path, callback);
-            _pool.enqueueTask([this, root, path, callback] {
-                std::string copy(path);
-                this->globRecursive(root, copy, callback);
-                });
-        }
-
-        path.resize(len);
-    }
-}
-
-/**
- * Glob a directory.
- */
-void DirCache::glob(Path root, Path path, GlobCallback callback) {
-
-    Split<Path> s = path.split();
-
-    if (isGlobPattern(s.head)) {
-        // Directory name contains a glob pattern.
-        glob(root, s.head,
-            [&](Path p, bool isDir) {
-                if (isDir) this->glob(root, p, s.tail, callback);
-            }
-        );
-    }
-    else if (isRecursiveGlob(s.tail)) {
-        std::string buf(s.head.path, s.head.length);
-        globRecursive(root, buf, callback);
-    }
-    else if (isGlobPattern(s.tail)) {
-        // Only base name contains a glob pattern.
-        glob(root, s.head, s.tail, callback);
-    }
-    else {
-        // No glob pattern in this path.
-        if (s.tail.length) {
-            callback(path, false);
-        }
-        else {
-            callback(s.head, true);
-        }
-    }
-
-    _pool.waitAll();
 }
 
 DirCache::DirCache(ImplicitDeps* deps) : _deps(deps), _pool(8) {}
@@ -286,4 +182,90 @@ const DirEntries& DirCache::dirEntries(const std::string& path) {
     return _cache.insert(
             std::pair<std::string, DirEntries>(normalized, ::dirEntries(normalized))
             ).first->second;
+}
+
+void DirCache::glob(Path root, Path path, Path pattern,
+          GlobCallback callback) {
+
+    std::string buf(path.path, path.length);
+
+    if (pattern.length == 0) {
+        pattern.join(buf);
+        callback(Path(buf), true);
+        return;
+    }
+
+    for (auto&& entry: dirEntries(root, path)) {
+        if (globMatch(entry.name, pattern)) {
+            Path(entry.name).join(buf);
+
+            callback(Path(buf), entry.isDir);
+
+            buf.resize(path.length);
+        }
+    }
+}
+
+void DirCache::globRecursive(Path root, std::string& path,
+        GlobCallback callback) {
+
+    size_t len = path.size();
+
+    // "**" matches 0 or more directories and thus includes this one.
+    callback(Path(path), true);
+
+    for (auto&& entry: dirEntries(root, path)) {
+        Path(entry.name).join(path);
+
+        callback(Path(path), entry.isDir);
+
+        if (entry.isDir) {
+            //globRecursive(root, path, callback);
+            _pool.enqueueTask([this, root, path, callback] {
+                std::string copy(path);
+                this->globRecursive(root, copy, callback);
+                });
+        }
+
+        path.resize(len);
+    }
+}
+
+void DirCache::glob(Path root, Path path, GlobCallback callback) {
+
+    globImpl(root, path, callback);
+
+    _pool.waitAll();
+}
+
+void DirCache::globImpl(Path root, Path path, GlobCallback callback) {
+
+    Split<Path> s = path.split();
+
+    if (isGlobPattern(s.head)) {
+        // If the directory name contains a glob pattern, we need to glob that
+        // before everything else.
+        globImpl(root, s.head,
+            [&](Path p, bool isDir) {
+                if (isDir) this->glob(root, p, s.tail, callback);
+            }
+        );
+    }
+    else if (isRecursiveGlob(s.tail)) {
+        std::string buf(s.head.path, s.head.length);
+        globRecursive(root, buf, callback);
+    }
+    else if (isGlobPattern(s.tail)) {
+        // Only base name contains a glob pattern.
+        glob(root, s.head, s.tail, callback);
+    }
+    else {
+        // No glob pattern in this path.
+        if (s.tail.length) {
+            callback(path, false);
+        }
+        else {
+            callback(s.head, true);
+        }
+    }
 }
