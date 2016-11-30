@@ -138,6 +138,7 @@ Generates the low-level rules required to build a generic D library/binary.
 ]]
 function common:rules()
     local objdir = self.objdir or path.norm(path.join("obj", self:basename()))
+    self.objdir = objdir;
 
     local args = table.join(self.prefix, self.compiler, self.opts)
 
@@ -178,9 +179,8 @@ function common:rules()
         end
     end
 
-    local output = self:path()
-
-    local linker_opts = table.join(self.linker_opts, {"-of" .. output})
+    local output = self:output()
+    table.append(compiler_opts, "-of" .. output)
 
     if self.combined then
         local deps = {}
@@ -195,8 +195,8 @@ function common:rules()
         -- Combined compilation
         rule {
             inputs  = table.join(srcs, libs, deps),
-            task    = {table.join(args, compiler_opts, linker_opts, srcs, libs)},
-            outputs = {to_object(objdir, output), output},
+            task    = {table.join(args, compiler_opts, self.linker_opts, srcs, libs)},
+            outputs = {self:path()},
             display = "dmd ".. self:basename(),
         }
     else
@@ -223,10 +223,14 @@ function common:rules()
         rule {
             inputs = table.join(objs, libs),
             task = {table.join(args, linker_opts, objs, libs)},
-            outputs = table.join({output}),
+            outputs = {self:path()},
             display = "dmd ".. self:basename(),
         }
     end
+end
+
+function common:output()
+    return path.norm(path.join(self.bindir, self:basename()))
 end
 
 function _library:basename()
@@ -237,6 +241,10 @@ function _library:basename()
     else
         return "lib".. name .. ".a"
     end
+end
+
+function _library:output()
+    return self:basename()
 end
 
 function _library:rules()
@@ -250,6 +258,10 @@ function _library:rules()
     end
 
     common.rules(self)
+end
+
+function _library:path()
+    return path.norm(path.join(self.objdir, self:basename()))
 end
 
 function _test:rules()
