@@ -128,9 +128,6 @@ DirEntries dirEntries(const std::string& path) {
 }
 
 enum class PathType {
-    // The path doesn't exist.
-    missing,
-
     // The path type is unknown.
     unknown,
 
@@ -145,10 +142,29 @@ enum class PathType {
  * Returns the type of a given path. That is, if it exists, if it's a directory,
  * or if it's a file.
  */
-PathType pathType(const char* path) {
+PathType pathType(const std::string& path) {
+#ifdef _WIN32
+
+    // Convert path to UTF-16
+    std::wstring_convert<std::codecvt_utf8_utf16<wchar_t>> converter;
+    std::wstring widePath = converter.from_bytes(path);
+
+    DWORD attribs = GetFileAttributesW(widePath.c_str());
+
+    if (attribs == INVALID_FILE_ATTRIBUTES)
+        return PathType::unknown;
+
+    if ((attribs & FILE_ATTRIBUTE_DIRECTORY) == FILE_ATTRIBUTE_DIRECTORY)
+        return PathType::dir;
+
+    // In Windows, if it's not a directory, then it must be a file.
+    return PathType::file;
+
+#else
+
     struct stat statbuf;
 
-    if (lstat(path, &statbuf) != 0)
+    if (lstat(path.c_str(), &statbuf) != 0)
         return PathType::unknown;
 
     switch (statbuf.st_mode & S_IFMT) {
@@ -157,12 +173,14 @@ PathType pathType(const char* path) {
     }
 
     return PathType::unknown;
+
+#endif // _WIN32
 }
 
 PathType pathType(const Path root, const Path path) {
     std::string buf(root.path, root.length);
     path.join(buf);
-    return pathType(buf.c_str());
+    return pathType(buf);
 }
 
 /**
