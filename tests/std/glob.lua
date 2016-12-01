@@ -119,6 +119,13 @@ assert(equal(
 ))
 
 assert(equal(
+    glob("**/foo.h"),
+    {
+        "a/foo.h",
+    }
+))
+
+assert(equal(
     glob("**/foobar.baz"),
     {
     }
