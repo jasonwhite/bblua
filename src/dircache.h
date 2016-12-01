@@ -32,6 +32,9 @@ typedef std::vector<DirEntry> DirEntries;
 
 using GlobCallback = std::function<void(Path, bool)>;
 
+// Called with the matched path.
+using MatchCallback = std::function<void(Path)>;
+
 /**
  * A cache for directory listings.
  */
@@ -79,9 +82,20 @@ public:
      */
     void glob(Path root, Path path, Path pattern, GlobCallback callback);
 
+    void glob2(Path root, Path path, MatchCallback callback);
+
 private:
 
     void globRecursive(Path root, std::string& path, GlobCallback callback);
 
     void globImpl(Path root, Path path, GlobCallback callback);
+
+    void glob2Impl(
+            Path root, // Root from which all matched paths are relative.
+            std::string& path, // The directory path we've matched so far.
+            const std::vector<Path>& components, // Path components of the pattern.
+            size_t index, // Current component we're trying to match.
+            bool matchDirs, // Only match directories.
+            MatchCallback callback // Function to call for every match
+            );
 };

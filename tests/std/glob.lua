@@ -62,43 +62,65 @@ assert(equal(
 assert(equal(
     glob("*/"),
     {
-        "a/",
-        "b/",
-        "c/",
+        "a",
+        "b",
+        "c",
     }
 ))
 
 assert(equal(
     glob("**/"),
     {
-        "",
-        "a/",
-        "b/",
-        "c/",
-        "c/1/",
-        "c/2/",
-        "c/3/",
+        "a",
+        "b",
+        "c",
+        "c/1",
+        "c/2",
+        "c/3",
     }
 ))
 
 assert(equal(
     glob("**"),
     {
-        "",
-        "a",
         "a/foo.c",
         "a/foo.h",
-        "b",
         "b/bar.c",
         "b/bar.h",
-        "c",
         "c/baz.h",
-        "c/1",
         "c/1/foo.cc",
-        "c/2",
         "c/2/bar.cc",
-        "c/3",
         "c/3/baz.cc",
+    }
+))
+
+assert(equal(
+    glob("a/**"),
+    {
+        "a/foo.c",
+        "a/foo.h",
+    }
+))
+
+assert(equal(
+    glob("c/**/1/*"),
+    {
+        "c/1/foo.cc",
+    }
+))
+
+assert(equal(
+    glob("c/**/*/*"),
+    {
+        "c/1/foo.cc",
+        "c/2/bar.cc",
+        "c/3/baz.cc",
+    }
+))
+
+assert(equal(
+    glob("**/foobar.baz"),
+    {
     }
 ))
 

@@ -156,15 +156,13 @@ int lua_glob(lua_State* L) {
     std::set<std::string> paths;
 
     // Adds a path to the set.
-    GlobCallback include = [&] (Path path, bool isDir) {
-        (void)isDir;
+    MatchCallback include = [&] (Path path) {
         std::lock_guard<std::mutex> lock(mutex);
         paths.insert(std::string(path.path, path.length));
     };
 
     // Removes a path to the set.
-    GlobCallback exclude = [&] (Path path, bool isDir) {
-        (void)isDir;
+    MatchCallback exclude = [&] (Path path) {
         std::lock_guard<std::mutex> lock(mutex);
         paths.erase(std::string(path.path, path.length));
     };
@@ -199,9 +197,9 @@ int lua_glob(lua_State* L) {
                 path = lua_tolstring(L, -1, &len);
                 if (path) {
                     if (len > 0 && path[0] == '!')
-                        dirCache->glob(root, Path(path+1, len-1), exclude);
+                        dirCache->glob2(root, Path(path+1, len-1), exclude);
                     else
-                        dirCache->glob(root, Path(path, len), include);
+                        dirCache->glob2(root, Path(path, len), include);
                 }
 
                 lua_pop(L, 1); // Pop path
@@ -211,9 +209,9 @@ int lua_glob(lua_State* L) {
             path = luaL_checklstring(L, i, &len);
 
             if (len > 0 && path[0] == '!')
-                dirCache->glob(root, Path(path+1, len-1), exclude);
+                dirCache->glob2(root, Path(path+1, len-1), exclude);
             else
-                dirCache->glob(root, Path(path, len), include);
+                dirCache->glob2(root, Path(path, len), include);
         }
     }
 

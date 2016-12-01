@@ -127,6 +127,44 @@ DirEntries dirEntries(const std::string& path) {
     return entries;
 }
 
+enum class PathType {
+    // The path doesn't exist.
+    missing,
+
+    // The path type is unknown.
+    unknown,
+
+    // The path exists refers to a file.
+    file,
+
+    // The path exists and refers to a directory.
+    dir,
+};
+
+/**
+ * Returns the type of a given path. That is, if it exists, if it's a directory,
+ * or if it's a file.
+ */
+PathType pathType(const char* path) {
+    struct stat statbuf;
+
+    if (lstat(path, &statbuf) != 0)
+        return PathType::unknown;
+
+    switch (statbuf.st_mode & S_IFMT) {
+        case S_IFREG: return PathType::file;
+        case S_IFDIR: return PathType::dir;
+    }
+
+    return PathType::unknown;
+}
+
+PathType pathType(const Path root, const Path path) {
+    std::string buf(root.path, root.length);
+    path.join(buf);
+    return pathType(buf.c_str());
+}
+
 /**
  * Returns true if the given string contains a glob pattern.
  */
@@ -266,6 +304,97 @@ void DirCache::globImpl(Path root, Path path, GlobCallback callback) {
         }
         else {
             callback(s.head, true);
+        }
+    }
+}
+
+void DirCache::glob2(Path root, Path path, MatchCallback callback) {
+
+    bool onlyMatchDirs = path.basename().length == 0;
+
+    auto components = path.components();
+
+    std::string buf;
+
+    glob2Impl(root, buf, components, 0, onlyMatchDirs, callback);
+}
+
+void DirCache::glob2Impl(Path root, std::string& path,
+        const std::vector<Path>& components, size_t index,
+        bool matchDirs, MatchCallback callback) {
+
+    if (index >= components.size()) return;
+
+    const Path& pattern = components[index];
+
+    // We only want to use the callback if this is the last thing to match.
+    const bool lastOne = index == components.size()-1;
+
+    const size_t pathLength = path.size();
+
+    if (!isGlobPattern(pattern)) {
+        Path(pattern).join(path);
+
+        if (lastOne) {
+            // The explicitly named path must exist in order to be returned.
+            PathType type = pathType(root, path);
+            if (( matchDirs && type == PathType::dir) ||
+                (!matchDirs && type == PathType::file)) {
+                callback(path);
+            }
+        }
+        else {
+            // Assume its a directory and go deeper
+            glob2Impl(root, path, components, index+1, matchDirs, callback);
+        }
+
+        path.resize(pathLength);
+    }
+    else if (isRecursiveGlob(pattern)) {
+        // A recursive glob can match 0 or more directories. Lets assume here it
+        // will match 0 directories. Note that this will cause the same
+        // directory to be listed twice. This should be okay since we are
+        // caching directory listing results.
+        glob2Impl(root, path, components, index+1, matchDirs, callback);
+
+        // We also want to continue on here attempting to match more than 0
+        // directories.
+        for (auto&& entry: dirEntries(root, path)) {
+
+            Path(entry.name).join(path);
+
+            if (lastOne && entry.isDir == matchDirs) {
+                // Note that "**" matches all files recursively and "**/"
+                // matches all directories recursively. Thus, we yield this
+                // path if this is the last pattern in the list and we've found
+                // the type of entry we're looking for.
+                callback(path);
+            }
+
+            if (entry.isDir) {
+                // We can match 0 or more directories. Go deeper!
+                glob2Impl(root, path, components, index, matchDirs, callback);
+            }
+
+            path.resize(pathLength);
+        }
+    }
+    else {
+        for (auto&& entry: dirEntries(root, path)) {
+            if (!globMatch(entry.name, pattern)) continue;
+
+            Path(entry.name).join(path);
+
+            if (lastOne) {
+                if (entry.isDir == matchDirs)
+                    callback(path);
+            }
+            else if (entry.isDir) {
+                // It's a directory and it matched. Shift the pattern.
+                glob2Impl(root, path, components, index+1, matchDirs, callback);
+            }
+
+            path.resize(pathLength);
         }
     }
 }

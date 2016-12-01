@@ -187,6 +187,8 @@ local components_tests = {
     {"foo///bar", {"foo", "bar"}, "foo\\bar"},
     {"/foo/bar", {"/", "foo", "bar"}, "/foo\\bar"},
     {"../foo/bar/baz", {"..", "foo", "bar", "baz"}, "..\\foo\\bar\\baz"},
+    {[[\\server\share\foo\bar]], {[[\\server\share]], "foo", "bar"}, [[\\server\share\foo\bar]]},
+    {[[C:\foo\bar]], {"C:\\", "foo", "bar"}, [[C:\foo\bar]]},
 }
 
 local components_error = 'In path.components("%s"): expected %s, got %s'

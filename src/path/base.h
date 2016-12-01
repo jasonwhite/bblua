@@ -135,7 +135,7 @@ public:
     /**
      * Joins this path to the end of the given buffer.
      */
-    void join(std::string& buf);
+    void join(std::string& buf) const;
 
     /**
      * Returns true if the path is equal to ".".
@@ -182,7 +182,7 @@ Split<PathImpl> BasePath<PathImpl>::splitRoot() const {
 }
 
 template<class PathImpl>
-void BasePath<PathImpl>::join(std::string& buf) {
+void BasePath<PathImpl>::join(std::string& buf) const {
     if (isabs()) {
         // Path is absolute, reset the buffer length
         buf.clear();
