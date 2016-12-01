@@ -30,8 +30,6 @@ struct DirEntry {
 
 typedef std::vector<DirEntry> DirEntries;
 
-using GlobCallback = std::function<void(Path, bool)>;
-
 // Called with the matched path.
 using MatchCallback = std::function<void(Path)>;
 
@@ -73,24 +71,12 @@ public:
      *   path     = The path which can contain glob patterns. Recursive glob
      *              expressions are also supported.
      *   callback = The function to call for every matched file name.
-     *   data     = Data to pass along to the callback function.
      */
-    void glob(Path root, Path path, GlobCallback callback);
-
-    /**
-     * Helper function. |path| must not contain a glob pattern.
-     */
-    void glob(Path root, Path path, Path pattern, GlobCallback callback);
-
-    void glob2(Path root, Path path, MatchCallback callback);
+    void glob(Path root, Path path, MatchCallback callback);
 
 private:
 
-    void globRecursive(Path root, std::string& path, GlobCallback callback);
-
-    void globImpl(Path root, Path path, GlobCallback callback);
-
-    void glob2Impl(
+    void globImpl(
             Path root, // Root from which all matched paths are relative.
             std::string& path, // The directory path we've matched so far.
             const std::vector<Path>& components, // Path components of the pattern.

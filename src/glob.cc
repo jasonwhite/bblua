@@ -197,9 +197,9 @@ int lua_glob(lua_State* L) {
                 path = lua_tolstring(L, -1, &len);
                 if (path) {
                     if (len > 0 && path[0] == '!')
-                        dirCache->glob2(root, Path(path+1, len-1), exclude);
+                        dirCache->glob(root, Path(path+1, len-1), exclude);
                     else
-                        dirCache->glob2(root, Path(path, len), include);
+                        dirCache->glob(root, Path(path, len), include);
                 }
 
                 lua_pop(L, 1); // Pop path
@@ -209,9 +209,9 @@ int lua_glob(lua_State* L) {
             path = luaL_checklstring(L, i, &len);
 
             if (len > 0 && path[0] == '!')
-                dirCache->glob2(root, Path(path+1, len-1), exclude);
+                dirCache->glob(root, Path(path+1, len-1), exclude);
             else
-                dirCache->glob2(root, Path(path, len), include);
+                dirCache->glob(root, Path(path, len), include);
         }
     }
 

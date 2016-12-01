@@ -222,93 +222,7 @@ const DirEntries& DirCache::dirEntries(const std::string& path) {
             ).first->second;
 }
 
-void DirCache::glob(Path root, Path path, Path pattern,
-          GlobCallback callback) {
-
-    std::string buf(path.path, path.length);
-
-    if (pattern.length == 0) {
-        pattern.join(buf);
-        callback(Path(buf), true);
-        return;
-    }
-
-    for (auto&& entry: dirEntries(root, path)) {
-        if (globMatch(entry.name, pattern)) {
-            Path(entry.name).join(buf);
-
-            callback(Path(buf), entry.isDir);
-
-            buf.resize(path.length);
-        }
-    }
-}
-
-void DirCache::globRecursive(Path root, std::string& path,
-        GlobCallback callback) {
-
-    size_t len = path.size();
-
-    // "**" matches 0 or more directories and thus includes this one.
-    callback(Path(path), true);
-
-    for (auto&& entry: dirEntries(root, path)) {
-        Path(entry.name).join(path);
-
-        callback(Path(path), entry.isDir);
-
-        if (entry.isDir) {
-            //globRecursive(root, path, callback);
-            _pool.enqueueTask([this, root, path, callback] {
-                std::string copy(path);
-                this->globRecursive(root, copy, callback);
-                });
-        }
-
-        path.resize(len);
-    }
-}
-
-void DirCache::glob(Path root, Path path, GlobCallback callback) {
-
-    globImpl(root, path, callback);
-
-    _pool.waitAll();
-}
-
-void DirCache::globImpl(Path root, Path path, GlobCallback callback) {
-
-    Split<Path> s = path.split();
-
-    if (isGlobPattern(s.head)) {
-        // If the directory name contains a glob pattern, we need to glob that
-        // before everything else.
-        globImpl(root, s.head,
-            [&](Path p, bool isDir) {
-                if (isDir) this->glob(root, p, s.tail, callback);
-            }
-        );
-    }
-    else if (isRecursiveGlob(s.tail)) {
-        std::string buf(s.head.path, s.head.length);
-        globRecursive(root, buf, callback);
-    }
-    else if (isGlobPattern(s.tail)) {
-        // Only base name contains a glob pattern.
-        glob(root, s.head, s.tail, callback);
-    }
-    else {
-        // No glob pattern in this path.
-        if (s.tail.length) {
-            callback(path, false);
-        }
-        else {
-            callback(s.head, true);
-        }
-    }
-}
-
-void DirCache::glob2(Path root, Path path, MatchCallback callback) {
+void DirCache::glob(Path root, Path path, MatchCallback callback) {
 
     bool onlyMatchDirs = path.basename().length == 0;
 
@@ -316,10 +230,10 @@ void DirCache::glob2(Path root, Path path, MatchCallback callback) {
 
     std::string buf;
 
-    glob2Impl(root, buf, components, 0, onlyMatchDirs, callback);
+    globImpl(root, buf, components, 0, onlyMatchDirs, callback);
 }
 
-void DirCache::glob2Impl(Path root, std::string& path,
+void DirCache::globImpl(Path root, std::string& path,
         const std::vector<Path>& components, size_t index,
         bool matchDirs, MatchCallback callback) {
 
@@ -345,7 +259,7 @@ void DirCache::glob2Impl(Path root, std::string& path,
         }
         else {
             // Assume its a directory and go deeper
-            glob2Impl(root, path, components, index+1, matchDirs, callback);
+            globImpl(root, path, components, index+1, matchDirs, callback);
         }
 
         path.resize(pathLength);
@@ -355,7 +269,7 @@ void DirCache::glob2Impl(Path root, std::string& path,
         // will match 0 directories. Note that this will cause the same
         // directory to be listed twice. This should be okay since we are
         // caching directory listing results.
-        glob2Impl(root, path, components, index+1, matchDirs, callback);
+        globImpl(root, path, components, index+1, matchDirs, callback);
 
         // We also want to continue on here attempting to match more than 0
         // directories.
@@ -373,7 +287,7 @@ void DirCache::glob2Impl(Path root, std::string& path,
 
             if (entry.isDir) {
                 // We can match 0 or more directories. Go deeper!
-                glob2Impl(root, path, components, index, matchDirs, callback);
+                globImpl(root, path, components, index, matchDirs, callback);
             }
 
             path.resize(pathLength);
@@ -391,7 +305,7 @@ void DirCache::glob2Impl(Path root, std::string& path,
             }
             else if (entry.isDir) {
                 // It's a directory and it matched. Shift the pattern.
-                glob2Impl(root, path, components, index+1, matchDirs, callback);
+                globImpl(root, path, components, index+1, matchDirs, callback);
             }
 
             path.resize(pathLength);
