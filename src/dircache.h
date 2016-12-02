@@ -84,4 +84,14 @@ private:
             bool matchDirs, // Only match directories.
             MatchCallback callback // Function to call for every match
             );
+
+    // Same as globImpl, but runs asynchronously.
+    void queueGlob(
+            Path root,
+            std::string& path,
+            const std::vector<Path>& components,
+            size_t index,
+            bool matchDirs,
+            MatchCallback callback
+            );
 };

@@ -208,7 +208,7 @@ inline bool isRecursiveGlob(const Path& p) {
 
 }
 
-DirCache::DirCache(ImplicitDeps* deps) : _deps(deps), _pool(8) {}
+DirCache::DirCache(ImplicitDeps* deps) : _deps(deps), _pool(1) {}
 
 DirCache::~DirCache() {
     // Ensure all work is done.
@@ -249,6 +249,8 @@ void DirCache::glob(Path root, Path path, MatchCallback callback) {
     std::string buf;
 
     globImpl(root, buf, components, 0, onlyMatchDirs, callback);
+
+    _pool.waitAll();
 }
 
 void DirCache::globImpl(Path root, std::string& path,
@@ -277,7 +279,7 @@ void DirCache::globImpl(Path root, std::string& path,
         }
         else {
             // Assume its a directory and go deeper
-            globImpl(root, path, components, index+1, matchDirs, callback);
+            queueGlob(root, path, components, index+1, matchDirs, callback);
         }
 
         path.resize(pathLength);
@@ -287,7 +289,7 @@ void DirCache::globImpl(Path root, std::string& path,
         // will match 0 directories. Note that this will cause the same
         // directory to be listed twice. This should be okay since we are
         // caching directory listing results.
-        globImpl(root, path, components, index+1, matchDirs, callback);
+        queueGlob(root, path, components, index+1, matchDirs, callback);
 
         // We also want to continue on here attempting to match more than 0
         // directories.
@@ -305,7 +307,7 @@ void DirCache::globImpl(Path root, std::string& path,
 
             if (entry.isDir) {
                 // We can match 0 or more directories. Go deeper!
-                globImpl(root, path, components, index, matchDirs, callback);
+                queueGlob(root, path, components, index, matchDirs, callback);
             }
 
             path.resize(pathLength);
@@ -323,10 +325,21 @@ void DirCache::globImpl(Path root, std::string& path,
             }
             else if (entry.isDir) {
                 // It's a directory and it matched. Shift the pattern.
-                globImpl(root, path, components, index+1, matchDirs, callback);
+                queueGlob(root, path, components, index+1, matchDirs, callback);
             }
 
             path.resize(pathLength);
         }
     }
+}
+
+void DirCache::queueGlob(Path root, std::string& path,
+        const std::vector<Path>& components, size_t index,
+        bool matchDirs, MatchCallback callback) {
+
+    globImpl(root, path, components, index, matchDirs, callback);
+
+    //_pool.enqueueTask([this, root, path, &components, index, matchDirs, callback] {
+            //globImpl(root, (std::string&)path, components, index, matchDirs, callback);
+            //});
 }
