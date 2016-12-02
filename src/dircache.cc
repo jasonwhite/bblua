@@ -118,6 +118,8 @@ DirEntries dirEntries(const std::string& path) {
         entries.push_back(DirEntry { entry->d_name, entry->d_type == DT_DIR });
     }
 
+    closedir(dir);
+
 #endif // !_WIN32
 
     // Sort the entries. The order in which directories are listed is not
