@@ -158,7 +158,7 @@ int lua_glob(lua_State* L) {
     // Adds a path to the set.
     MatchCallback include = [&] (Path path) {
         std::lock_guard<std::mutex> lock(mutex);
-        paths.insert(std::string(path.path, path.length));
+        paths.emplace(path.path, path.length);
     };
 
     // Removes a path to the set.

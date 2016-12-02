@@ -268,25 +268,7 @@ void DirCache::globImpl(Path root, std::string& path,
 
     const size_t pathLength = path.size();
 
-    if (!isGlobPattern(pattern)) {
-        Path(pattern).join(path);
-
-        if (lastOne) {
-            // The explicitly named path must exist in order to be returned.
-            PathType type = pathType(root, path);
-            if (( matchDirs && type == PathType::dir) ||
-                (!matchDirs && type == PathType::file)) {
-                callback(path);
-            }
-        }
-        else {
-            // Assume its a directory and go deeper
-            queueGlob(root, path, components, index+1, matchDirs, callback);
-        }
-
-        path.resize(pathLength);
-    }
-    else if (isRecursiveGlob(pattern)) {
+    if (isRecursiveGlob(pattern)) {
         // A recursive glob can match 0 or more directories. Lets assume here it
         // will match 0 directories. Note that this will cause the same
         // directory to be listed twice. This should be okay since we are
@@ -315,7 +297,7 @@ void DirCache::globImpl(Path root, std::string& path,
             path.resize(pathLength);
         }
     }
-    else {
+    else if (isGlobPattern(pattern)) {
         for (auto&& entry: dirEntries(root, path)) {
             if (!globMatch(entry.name, pattern)) continue;
 
@@ -332,6 +314,24 @@ void DirCache::globImpl(Path root, std::string& path,
 
             path.resize(pathLength);
         }
+    }
+    else {
+        Path(pattern).join(path);
+
+        if (lastOne) {
+            // The explicitly named path must exist in order to be returned.
+            PathType type = pathType(root, path);
+            if (( matchDirs && type == PathType::dir) ||
+                (!matchDirs && type == PathType::file)) {
+                callback(path);
+            }
+        }
+        else {
+            // Assume its a directory and go deeper
+            queueGlob(root, path, components, index+1, matchDirs, callback);
+        }
+
+        path.resize(pathLength);
     }
 }
 
