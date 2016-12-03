@@ -10,6 +10,8 @@
 #include <string.h>
 #include <ctype.h>
 
+#include <iostream>
+#include <algorithm>
 #include <mutex>
 #include <string>
 #include <set>
@@ -152,19 +154,19 @@ int lua_glob(lua_State* L) {
         // Never returns.
     }
 
-    std::mutex mutex; // Protects set of paths
-    std::set<std::string> paths;
+    std::mutex includesMutex, excludesMutex;
+    std::vector<std::string> includes, excludes;
 
     // Adds a path to the set.
     MatchCallback include = [&] (Path path) {
-        std::lock_guard<std::mutex> lock(mutex);
-        paths.emplace(path.path, path.length);
+        std::lock_guard<std::mutex> lock(includesMutex);
+        includes.emplace_back(path.path, path.length);
     };
 
     // Removes a path to the set.
     MatchCallback exclude = [&] (Path path) {
-        std::lock_guard<std::mutex> lock(mutex);
-        paths.erase(std::string(path.path, path.length));
+        std::lock_guard<std::mutex> lock(excludesMutex);
+        excludes.emplace_back(path.path, path.length);
     };
 
     int argc = lua_gettop(L);
@@ -215,12 +217,49 @@ int lua_glob(lua_State* L) {
         }
     }
 
+    // Sort both the includes and excludes list. Note that we could have used a
+    // set instead, but this is a little bit faster.
+    std::sort(includes.begin(), includes.end());
+    std::sort(excludes.begin(), excludes.end());
+
+    // Remove duplicates
+    includes.resize(std::distance(includes.begin(),
+                std::unique(includes.begin(), includes.end())));
+    excludes.resize(std::distance(excludes.begin(),
+                std::unique(excludes.begin(), excludes.end())));
+
     // Construct the Lua table.
     lua_newtable(L);
     lua_Integer n = 1;
 
-    for (std::set<std::string>::iterator it = paths.begin(); it != paths.end(); ++it) {
-        lua_pushlstring(L, it->data(), it->size());
+    // Iterate over each array in lockstep, skipping over the elements in paths
+    // if they are also in excludes. We're basically doing the set operation
+    // (includes - excludes), except lazily.
+    auto includesIter = includes.begin();
+    auto excludesIter = excludes.begin();
+
+    while (includesIter != includes.end() && excludesIter != excludes.end()) {
+        if (*includesIter < *excludesIter) {
+            // Path only in the set of includes.
+            ++includesIter;
+            lua_pushlstring(L, includesIter->data(), includesIter->size());
+            lua_rawseti(L, -2, n);
+            ++n;
+        }
+        else if (*includesIter > *excludesIter) {
+            // Path only in the excludes.
+            ++excludesIter;
+        }
+        else {
+            // Path in both includes and excludes.
+            ++includesIter;
+            ++excludesIter;
+        }
+    }
+
+    // Anything left over in includes cannot also be in the excludes.
+    for (; includesIter != includes.end(); ++includesIter) {
+        lua_pushlstring(L, includesIter->data(), includesIter->size());
         lua_rawseti(L, -2, n);
         ++n;
     }
