@@ -10,7 +10,6 @@
 #include <string.h>
 #include <ctype.h>
 
-#include <iostream>
 #include <algorithm>
 #include <mutex>
 #include <string>
@@ -154,19 +153,28 @@ int lua_glob(lua_State* L) {
         // Never returns.
     }
 
-    std::mutex includesMutex, excludesMutex;
-    std::vector<std::string> includes, excludes;
+    std::mutex mutex;
+    std::string pool; // String pool to avoid many tiny allocations.
+
+    using PoolEntry = std::pair<size_t, size_t>;
+    std::vector<PoolEntry> poolIncludes, poolExcludes;
 
     // Adds a path to the set.
     MatchCallback include = [&] (Path path) {
-        std::lock_guard<std::mutex> lock(includesMutex);
-        includes.emplace_back(path.path, path.length);
+        std::lock_guard<std::mutex> lock(mutex);
+
+        const size_t pos = pool.length();
+        pool.append(path.path, path.length);
+        poolIncludes.emplace_back(pos, path.length);
     };
 
     // Removes a path to the set.
     MatchCallback exclude = [&] (Path path) {
-        std::lock_guard<std::mutex> lock(excludesMutex);
-        excludes.emplace_back(path.path, path.length);
+        std::lock_guard<std::mutex> lock(mutex);
+
+        const size_t pos = pool.length();
+        pool.append(path.path, path.length);
+        poolExcludes.emplace_back(pos, path.length);
     };
 
     int argc = lua_gettop(L);
@@ -217,6 +225,19 @@ int lua_glob(lua_State* L) {
         }
     }
 
+    // Create includes and excludes list from the pool offsets. We can't create
+    // these arrays directly because adding entries to the pool can cause it to
+    // reallocate and thus change the pointers that the Path objects are using.
+    std::vector<Path> includes(poolIncludes.size());
+    std::vector<Path> excludes(poolIncludes.size());
+
+    auto mapPool = [&pool](const PoolEntry& e) -> Path {
+        return Path(&pool[e.first], e.second);
+    };
+
+    std::transform(poolIncludes.begin(), poolIncludes.end(), includes.begin(), mapPool);
+    std::transform(poolExcludes.begin(), poolExcludes.end(), excludes.begin(), mapPool);
+
     // Sort both the includes and excludes list. Note that we could have used a
     // set instead, but this is a little bit faster.
     std::sort(includes.begin(), includes.end());
@@ -239,14 +260,16 @@ int lua_glob(lua_State* L) {
     auto excludesIter = excludes.begin();
 
     while (includesIter != includes.end() && excludesIter != excludes.end()) {
-        if (*includesIter < *excludesIter) {
+
+        const int c = includesIter->compare(*excludesIter);
+        if (c < 0) {
             // Path only in the set of includes.
             ++includesIter;
-            lua_pushlstring(L, includesIter->data(), includesIter->size());
+            lua_pushlstring(L, includesIter->path, includesIter->length);
             lua_rawseti(L, -2, n);
             ++n;
         }
-        else if (*includesIter > *excludesIter) {
+        else if (c > 0) {
             // Path only in the excludes.
             ++excludesIter;
         }
@@ -259,7 +282,7 @@ int lua_glob(lua_State* L) {
 
     // Anything left over in includes cannot also be in the excludes.
     for (; includesIter != includes.end(); ++includesIter) {
-        lua_pushlstring(L, includesIter->data(), includesIter->size());
+        lua_pushlstring(L, includesIter->path, includesIter->length);
         lua_rawseti(L, -2, n);
         ++n;
     }

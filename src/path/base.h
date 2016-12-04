@@ -44,7 +44,7 @@ public:
     /**
      * Compares with another path for equality.
      */
-    int cmp(const PathImpl& rhs) const;
+    int compare(const PathImpl& rhs) const;
 
     /**
      * Returns the length of the root portion of the path.
@@ -150,10 +150,18 @@ public:
     bool isDotDot() const {
         return length == 2 && path[0] == '.' && path[1] == '.';
     }
+
+    bool operator==(const PathImpl& rhs) {
+        return compare(rhs) == 0;
+    }
+
+    bool operator<(const PathImpl& rhs) {
+        return compare(rhs) < 0;
+    }
 };
 
 template<class PathImpl>
-int BasePath<PathImpl>::cmp(const PathImpl& rhs) const {
+int BasePath<PathImpl>::compare(const PathImpl& rhs) const {
     ptrdiff_t lengthDiff = (ptrdiff_t)length - (ptrdiff_t)rhs.length;
 
     if (lengthDiff < 0)
