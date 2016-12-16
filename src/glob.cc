@@ -154,27 +154,18 @@ int lua_glob(lua_State* L) {
     }
 
     std::mutex mutex;
-    std::string pool; // String pool to avoid many tiny allocations.
-
-    using PoolEntry = std::pair<size_t, size_t>;
-    std::vector<PoolEntry> poolIncludes, poolExcludes;
+    std::set<std::string> paths;
 
     // Adds a path to the set.
     MatchCallback include = [&] (Path path) {
         std::lock_guard<std::mutex> lock(mutex);
-
-        const size_t pos = pool.length();
-        pool.append(path.path, path.length);
-        poolIncludes.emplace_back(pos, path.length);
+        paths.emplace(path.path, path.length);
     };
 
     // Removes a path to the set.
     MatchCallback exclude = [&] (Path path) {
         std::lock_guard<std::mutex> lock(mutex);
-
-        const size_t pos = pool.length();
-        pool.append(path.path, path.length);
-        poolExcludes.emplace_back(pos, path.length);
+        paths.erase(std::string(path.path, path.length));
     };
 
     int argc = lua_gettop(L);
@@ -225,64 +216,13 @@ int lua_glob(lua_State* L) {
         }
     }
 
-    // Create includes and excludes list from the pool offsets. We can't create
-    // these arrays directly because adding entries to the pool can cause it to
-    // reallocate and thus change the pointers that the Path objects are using.
-    std::vector<Path> includes(poolIncludes.size());
-    std::vector<Path> excludes(poolIncludes.size());
-
-    auto mapPool = [&pool](const PoolEntry& e) -> Path {
-        return Path(&pool[e.first], e.second);
-    };
-
-    std::transform(poolIncludes.begin(), poolIncludes.end(), includes.begin(), mapPool);
-    std::transform(poolExcludes.begin(), poolExcludes.end(), excludes.begin(), mapPool);
-
-    // Sort both the includes and excludes list. Note that we could have used a
-    // set instead, but this is a little bit faster.
-    std::sort(includes.begin(), includes.end());
-    std::sort(excludes.begin(), excludes.end());
-
-    // Remove duplicates
-    includes.resize(std::distance(includes.begin(),
-                std::unique(includes.begin(), includes.end())));
-    excludes.resize(std::distance(excludes.begin(),
-                std::unique(excludes.begin(), excludes.end())));
-
     // Construct the Lua table.
     lua_newtable(L);
     lua_Integer n = 1;
 
-    // Iterate over each array in lockstep, skipping over the elements in paths
-    // if they are also in excludes. We're basically doing the set operation
-    // (includes - excludes), except lazily.
-    auto includesIter = includes.begin();
-    auto excludesIter = excludes.begin();
-
-    while (includesIter != includes.end() && excludesIter != excludes.end()) {
-
-        const int c = includesIter->compare(*excludesIter);
-        if (c < 0) {
-            // Path only in the set of includes.
-            ++includesIter;
-            lua_pushlstring(L, includesIter->path, includesIter->length);
-            lua_rawseti(L, -2, n);
-            ++n;
-        }
-        else if (c > 0) {
-            // Path only in the excludes.
-            ++excludesIter;
-        }
-        else {
-            // Path in both includes and excludes.
-            ++includesIter;
-            ++excludesIter;
-        }
-    }
-
     // Anything left over in includes cannot also be in the excludes.
-    for (; includesIter != includes.end(); ++includesIter) {
-        lua_pushlstring(L, includesIter->path, includesIter->length);
+    for (auto&& p: paths) {
+        lua_pushlstring(L, p.data(), p.length());
         lua_rawseti(L, -2, n);
         ++n;
     }
