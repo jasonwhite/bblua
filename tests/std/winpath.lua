@@ -236,3 +236,28 @@ assert(path.norm("C:/foo/../../../bar") == "C:\\bar")
 assert(path.norm("\\\\server\\share\\..\\..\\foo") == "\\\\server\\share\\foo")
 assert(path.norm("\\\\?\\UNC\\server\\share\\..\\..\\foo") == "\\\\?\\UNC\\server\\share\\foo")
 assert(path.norm("\\\\.\\COM1\\bar\\baz\\..\\..\\..\\foo") == "\\\\.\\COM1\\foo")
+
+--[[
+    path.matches
+]]
+assert(path.matches("", ""))
+assert(path.matches("", "*"))
+assert(path.matches("foo", "Foo"))
+assert(path.matches("Foo", "foo"))
+assert(path.matches("foo.c", "*.c"))
+assert(path.matches("foo.c", "*.C"))
+assert(path.matches("foo", "foo*"))
+assert(path.matches("foo.bar.baz", "*.*.*"))
+assert(path.matches("foo.bar.baz", "f*.b*.b*"))
+assert(path.matches("foo", "[bf]oo"))
+assert(path.matches("zoo", "[!bf]oo"))
+assert(path.matches("foo.c", "[fb]*.c"))
+
+assert(not path.matches("", "a"))
+assert(not path.matches("a", ""))
+assert(not path.matches("foo", "bar"))
+assert(not path.matches("foo.bar", "foo"))
+assert(not path.matches("foo.d", "*.c"))
+assert(not path.matches("foo.bar.baz", "f*.f*.f*"))
+assert(not path.matches("zoo", "[bf]oo"))
+assert(not path.matches("zoo", "[!bzf]oo"))

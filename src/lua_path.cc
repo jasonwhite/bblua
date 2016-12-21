@@ -160,6 +160,15 @@ static int path_norm(lua_State* L) {
     return 1;
 }
 
+template<class Path>
+int path_matches(lua_State* L) {
+    size_t len, patlen;
+    const char* path = luaL_checklstring(L, 1, &len);
+    const char* pattern = luaL_checklstring(L, 2, &patlen);
+    lua_pushboolean(L, Path(path, len).matches(Path(pattern, patlen)));
+    return 1;
+}
+
 static const luaL_Reg pathlib_posix[] = {
     {"splitroot", path_splitroot<PosixPath>},
     {"isabs", path_isabs<PosixPath>},
@@ -172,6 +181,7 @@ static const luaL_Reg pathlib_posix[] = {
     {"setext", path_setext<PosixPath>},
     {"components", path_components<PosixPath>},
     {"norm", path_norm<PosixPath>},
+    {"matches", path_matches<PosixPath>},
     {NULL, NULL}
 };
 
@@ -187,6 +197,7 @@ static const luaL_Reg pathlib_win[] = {
     {"setext", path_setext<WinPath>},
     {"components", path_components<WinPath>},
     {"norm", path_norm<WinPath>},
+    {"matches", path_matches<WinPath>},
     {NULL, NULL}
 };
 

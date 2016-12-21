@@ -13,17 +13,6 @@
 struct lua_State;
 
 /**
- * Checks if a glob pattern matches a string.
- *
- * Arguments:
- *  - path: The path to match
- *  - pattern: The glob pattern
- *
- * Returns: True if it matches, false otherwise.
- */
-int lua_glob_match(lua_State* L);
-
-/**
  * Lists files based on a glob expression.
  *
  * Arguments:
@@ -32,8 +21,3 @@ int lua_glob_match(lua_State* L);
  * Returns: A table of the matching files.
  */
 int lua_glob(lua_State* L);
-
-/**
- * Returns true if the pattern matches the given filename, false otherwise.
- */
-bool globMatch(Path path, Path pattern);

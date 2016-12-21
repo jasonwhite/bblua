@@ -21,14 +21,6 @@
 #include "path.h"
 #include "lua_globals.h"
 
-int lua_glob_match(lua_State* L) {
-    size_t len, patlen;
-    const char* path = luaL_checklstring(L, 1, &len);
-    const char* pattern = luaL_checklstring(L, 2, &patlen);
-    lua_pushboolean(L, Path(path, len).matches(Path(pattern, patlen)));
-    return 1;
-}
-
 int lua_glob(lua_State* L) {
 
     DirCache& dirCache = lua_globals::dirCache(L);

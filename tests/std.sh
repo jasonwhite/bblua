@@ -8,5 +8,4 @@
 runtest std/globals.sh
 runtest std/posixpath.sh
 runtest std/winpath.sh
-runtest std/string.sh
 runtest std/glob.sh
