@@ -19,7 +19,7 @@
 
 #include "glob.h"
 #include "path.h"
-#include "dircache.h"
+#include "lua_globals.h"
 
 namespace {
 
@@ -140,18 +140,8 @@ int lua_glob_match(lua_State* L) {
 
 int lua_glob(lua_State* L) {
 
-    // Get the directory cache object.
-    lua_getglobal(L, "__DIR_CACHE");
-    DirCache* dirCache = (DirCache*)lua_topointer(L, -1);
-    lua_pop(L, 1); // Pop __DIR_CACHE
-
-    if (!dirCache) {
-        // This would probably only happen if someone messes with this global
-        // variable in a Lua script.
-        luaL_error(L, "__DIR_CACHE does not point to any object");
-
-        // Never returns.
-    }
+    DirCache& dirCache = lua_globals::dirCache(L);
+    ThreadPool& pool = lua_globals::threadPool(L);
 
     std::mutex mutex;
     std::set<std::string> paths;
@@ -198,9 +188,9 @@ int lua_glob(lua_State* L) {
                 path = lua_tolstring(L, -1, &len);
                 if (path) {
                     if (len > 0 && path[0] == '!')
-                        dirCache->glob(root, Path(path+1, len-1), exclude);
+                        dirCache.glob(root, Path(path+1, len-1), exclude, &pool);
                     else
-                        dirCache->glob(root, Path(path, len), include);
+                        dirCache.glob(root, Path(path, len), include, &pool);
                 }
 
                 lua_pop(L, 1); // Pop path
@@ -210,9 +200,9 @@ int lua_glob(lua_State* L) {
             path = luaL_checklstring(L, i, &len);
 
             if (len > 0 && path[0] == '!')
-                dirCache->glob(root, Path(path+1, len-1), exclude);
+                dirCache.glob(root, Path(path+1, len-1), exclude, &pool);
             else
-                dirCache->glob(root, Path(path, len), include);
+                dirCache.glob(root, Path(path, len), include, &pool);
         }
     }
 

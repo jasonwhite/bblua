@@ -21,13 +21,14 @@
  */
 #include "threadpool.h"
 
+#include <algorithm>
+
 ThreadPool::ThreadPool(size_t threads) :
-    _threads(threads), _tasksLeft(0), _stop(false)
+    _threads(std::max((size_t)1, threads)), _tasksLeft(0), _stop(false)
 {
     // Initialize worker threads.
-    for (size_t i = 0; i < threads; ++i) {
-        _threads[i] = std::thread([this] { this->worker(); });
-    }
+    for (auto& t: _threads)
+        t = std::thread([this] { worker(); });
 }
 
 ThreadPool::~ThreadPool() {

@@ -15,10 +15,10 @@
 #include <mutex>
 #include <functional>
 
-#include "threadpool.h"
 #include "path.h"
 
 class ImplicitDeps;
+class ThreadPool;
 
 struct DirEntry {
     std::string name;
@@ -46,19 +46,21 @@ private:
     // Mutex protects the cache.
     std::mutex _mutex;
 
-    ThreadPool _pool;
-
 public:
     DirCache(ImplicitDeps* deps = nullptr);
     virtual ~DirCache();
 
     /**
      * Returns a list of names in the given directory.
+     *
+     * This function is thread safe.
      */
     const DirEntries& dirEntries(const std::string& path);
 
     /**
      * Convenience function. The two paths are joined and then looked up.
+     *
+     * This function is thread safe.
      */
     const DirEntries& dirEntries(Path root, Path dir);
 
@@ -71,8 +73,11 @@ public:
      *   path     = The path which can contain glob patterns. Recursive glob
      *              expressions are also supported.
      *   callback = The function to call for every matched file name.
+     *   pool     = Thread pool to use for evaluating glob expressions. If NULL,
+     *              all expressions are evaluated serially which can actually be
+     *              faster in some cases.
      */
-    void glob(Path root, Path path, MatchCallback callback);
+    void glob(Path root, Path path, MatchCallback callback, ThreadPool* pool = nullptr);
 
 private:
 
@@ -82,16 +87,19 @@ private:
             const std::vector<Path>& components, // Path components of the pattern.
             size_t index, // Current component we're trying to match.
             bool matchDirs, // Only match directories.
-            MatchCallback callback // Function to call for every match
+            MatchCallback callback, // Function to call for every match
+            ThreadPool* pool
             );
 
-    // Same as globImpl, but runs asynchronously.
+    // Helper function to run an asynchronous glob using the thread pool (if
+    // any).
     void queueGlob(
             Path root,
             std::string& path,
             const std::vector<Path>& components,
             size_t index,
             bool matchDirs,
-            MatchCallback callback
+            MatchCallback callback,
+            ThreadPool* pool
             );
 };

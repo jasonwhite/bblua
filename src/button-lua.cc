@@ -23,6 +23,7 @@
 #include "glob.h"
 #include "deps.h"
 #include "dircache.h"
+#include "threadpool.h"
 
 namespace {
 
@@ -178,11 +179,15 @@ int execute(lua_State* L, int argc, char** argv) {
     }
 
     ImplicitDeps deps;
+    ThreadPool pool; // TODO: Allow setting pool size from command line
     Rules rules(output);
     DirCache dirCache(&deps);
 
     lua_pushlightuserdata(L, &dirCache);
     lua_setglobal(L, "__DIR_CACHE");
+
+    lua_pushlightuserdata(L, &pool);
+    lua_setglobal(L, "__THREAD_POOL");
 
     // Register publish_input() function
     lua_pushlightuserdata(L, &deps);
