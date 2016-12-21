@@ -33,7 +33,7 @@
     <ClInclude Include="..\..\..\src\embedded.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\..\src\glob.h">
+    <ClInclude Include="..\..\..\src\lua_glob.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="..\..\..\src\lua_path.h">
@@ -68,7 +68,7 @@
     <ClCompile Include="..\..\..\src\embedded.cc">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\..\src\glob.cc">
+    <ClCompile Include="..\..\..\src\lua_glob.cc">
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="..\..\..\src\lua_path.cc">

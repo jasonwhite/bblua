@@ -18,7 +18,6 @@
 
 #include "threadpool.h"
 #include "dircache.h"
-#include "glob.h"
 #include "path.h"
 #include "deps.h"
 

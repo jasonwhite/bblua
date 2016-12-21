@@ -23,7 +23,7 @@
     <ClInclude Include="..\..\..\src\deps.h" />
     <ClInclude Include="..\..\..\src\dircache.h" />
     <ClInclude Include="..\..\..\src\embedded.h" />
-    <ClInclude Include="..\..\..\src\glob.h" />
+    <ClInclude Include="..\..\..\src\lua_glob.h" />
     <ClInclude Include="..\..\..\src\lua_path.h" />
     <ClInclude Include="..\..\..\src\path.h" />
     <ClInclude Include="..\..\..\src\path\base.h" />
@@ -37,7 +37,7 @@
     <ClCompile Include="..\..\..\src\deps.cc" />
     <ClCompile Include="..\..\..\src\dircache.cc" />
     <ClCompile Include="..\..\..\src\embedded.cc" />
-    <ClCompile Include="..\..\..\src\glob.cc" />
+    <ClCompile Include="..\..\..\src\lua_glob.cc" />
     <ClCompile Include="..\..\..\src\lua_path.cc" />
     <ClCompile Include="..\..\..\src\main.cc" />
     <ClCompile Include="..\..\..\src\path\posix.cc" />

@@ -17,7 +17,7 @@
 
 #include "lua.hpp"
 
-#include "glob.h"
+#include "lua_glob.h"
 #include "path.h"
 #include "lua_globals.h"
 

@@ -20,7 +20,7 @@
 #include "path.h"
 #include "lua_path.h"
 #include "embedded.h"
-#include "glob.h"
+#include "lua_glob.h"
 #include "deps.h"
 #include "dircache.h"
 #include "threadpool.h"
