@@ -12,6 +12,7 @@
 #include <string.h> // for strlen
 #include <string>
 #include <vector>
+#include <cctype> // For tolower
 
 #include "lua.hpp"
 
@@ -158,6 +159,11 @@ public:
     bool operator<(const PathImpl& rhs) const {
         return compare(rhs) < 0;
     }
+
+    /**
+     * Returns true if the path matches the given glob pattern.
+     */
+    bool matches(const PathImpl& pattern) const;
 };
 
 template<class PathImpl>
@@ -364,4 +370,88 @@ void BasePath<PathImpl>::norm(std::string& buf) const {
         if (PathImpl::isSep(ch) && ch != PathImpl::defaultSep)
             ch = PathImpl::defaultSep;
     }
+}
+
+template<class PathImpl>
+bool BasePath<PathImpl>::matches(const PathImpl& pattern) const {
+    size_t i = 0;
+
+    for (size_t j = 0; j < pattern.length; ++j) {
+        switch (pattern.path[j]) {
+            case '?': {
+                // Match any single character
+                if (i == length)
+                    return false;
+                ++i;
+                break;
+            }
+
+            case '*': {
+                // Match 0 or more characters
+                if (j+1 == pattern.length)
+                    return true;
+
+                // Consume characters while looking ahead for matches
+                for (; i < length; ++i) {
+                    if (PathImpl(path+i, length-i).matches(
+                            PathImpl(pattern.path+j+1, pattern.length-j-1)))
+                        return true;
+                }
+
+                return false;
+            }
+
+            case '[': {
+                // Match any of the characters that appear in the square brackets
+                if (i == length) return false;
+
+                // Skip past the opening bracket
+                if (++j == pattern.length) return false;
+
+                // Invert the match?
+                bool invert = false;
+                if (pattern.path[j] == '!') {
+                    invert = true;
+                    if (++j == pattern.length)
+                        return false;
+                }
+
+                // Find the closing bracket
+                size_t end = j;
+                while (end < pattern.length && pattern.path[end] != ']')
+                    ++end;
+
+                // No matching bracket?
+                if (end == pattern.length) return false;
+
+                // Check each character between the brackets for a match
+                bool match = false;
+                while (j < end) {
+                    // Found a match
+                    if (!match && PathImpl::cmp(path[i], pattern.path[j]) == 0) {
+                        match = true;
+                    }
+
+                    ++j;
+                }
+
+                if (match == invert)
+                    return false;
+
+                ++i;
+                break;
+            }
+
+            default: {
+                // Match the next character in the pattern
+                if (i == length || PathImpl::cmp(path[i], pattern.path[j]))
+                    return false;
+                ++i;
+                break;
+            }
+        }
+    }
+
+    // If we ran out of pattern and out of path, then we have a complete match.
+    return i == length;
 }

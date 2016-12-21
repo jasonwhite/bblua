@@ -301,9 +301,11 @@ void DirCache::globImpl(Path root, std::string& path,
     }
     else if (isGlobPattern(pattern)) {
         for (auto&& entry: dirEntries(root, path)) {
-            if (!globMatch(entry.name, pattern)) continue;
+            const Path name = Path(entry.name);
 
-            Path(entry.name).join(path);
+            if (!name.matches(pattern)) continue;
+
+            name.join(path);
 
             if (lastOne) {
                 if (entry.isDir == matchDirs)
