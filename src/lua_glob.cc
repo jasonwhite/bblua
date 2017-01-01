@@ -93,7 +93,6 @@ int lua_glob(lua_State* L) {
     lua_newtable(L);
     lua_Integer n = 1;
 
-    // Anything left over in includes cannot also be in the excludes.
     for (auto&& p: paths) {
         lua_pushlstring(L, p.data(), p.length());
         lua_rawseti(L, -2, n);
