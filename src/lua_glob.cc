@@ -35,7 +35,7 @@ int lua_glob(lua_State* L) {
         paths.emplace(path.path, path.length);
     };
 
-    // Removes a path to the set.
+    // Removes a path from the set.
     MatchCallback exclude = [&] (Path path) {
         std::lock_guard<std::mutex> lock(mutex);
         paths.erase(std::string(path.path, path.length));
