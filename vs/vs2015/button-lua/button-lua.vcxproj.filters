@@ -74,9 +74,6 @@
     <ClCompile Include="..\..\..\src\embedded.cc">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\..\src\lua_glob.cc">
-      <Filter>Source Files</Filter>
-    </ClCompile>
     <ClCompile Include="..\..\..\src\lua_globals.cc">
       <Filter>Source Files</Filter>
     </ClCompile>
@@ -96,6 +93,9 @@
       <Filter>Source Files\path</Filter>
     </ClCompile>
     <ClCompile Include="..\..\..\src\threadpool.cc">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\src\lua_glob.cc">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>

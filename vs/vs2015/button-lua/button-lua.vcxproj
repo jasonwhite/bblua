@@ -38,6 +38,7 @@
     <ClCompile Include="..\..\..\src\deps.cc" />
     <ClCompile Include="..\..\..\src\dircache.cc" />
     <ClCompile Include="..\..\..\src\embedded.cc" />
+    <ClCompile Include="..\..\..\src\lua_glob.cc" />
     <ClCompile Include="..\..\..\src\lua_globals.cc" />
     <ClCompile Include="..\..\..\src\lua_path.cc" />
     <ClCompile Include="..\..\..\src\main.cc" />
